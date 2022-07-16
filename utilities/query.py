@@ -243,7 +243,12 @@ if __name__ == "__main__":
         if query == "Exit":
             break
         #### W3: classify the query
-        search(client=opensearch, user_query=query, index=index_name)
+        #search(client=opensearch, user_query=query, index=index_name)
+        query_obj = create_query(user_query, click_prior_query=None, filters=[], sort=sort, sortDir=sortDir, source=["name", "shortDescription"], use_synonyms=use_synonyms)
+
+        response = client.search(query_obj, index=index)
+        if response and response['hits']['hits'] and len(response['hits']['hits']) > 0:
+            hits = response['hits']['hits']
 
         print(query_prompt)
 

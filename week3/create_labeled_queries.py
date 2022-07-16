@@ -49,11 +49,34 @@ df = pd.read_csv(queries_file_name)[['category', 'query']]
 df = df[df['category'].isin(categories)]
 
 # IMPLEMENT ME: Convert queries to lowercase, and optionally implement other normalization, like stemming.
+df['query'].str.lower()
+
 
 # IMPLEMENT ME: Roll up categories to ancestors to satisfy the minimum number of queries per category.
+indexed_parents = parents_df.set_index('category')
+current_counts = pd.DataFrame(df['category'].value_counts()).reset_index()
+current_counts.columns = ['category', 'count']
+current_counts = current_counts[current_counts['category'] != root_category_id]
+min_count = current_counts['count'].min()
+
+while(min_count < min_queries and len(df) > 0): 
+    cats_to_replace = current_counts.loc[current_counts['count'] == min_count]
+    replacements = {}
+    for to_replace in set(cats_to_replace['category'].values):
+        print(f'Replacing {to_replace}, n = {cats_to_replace.loc[cats_to_replace["category"] == to_replace, "count"].squeeze()}')
+        replacements[to_replace] = indexed_parents.loc[to_replace]['parent']
+        #df.loc[df['category'] == to_replace, 'category'] = indexed_parents.loc[to_replace]['parent']
+    df['category'].replace(to_replace=replacements, regex=False, inplace=True)
+
+    current_counts = pd.DataFrame(df['category'].value_counts()).reset_index()
+    current_counts.columns = ['category', 'count']
+    current_counts = current_counts[current_counts['category'] != root_category_id]
+    min_count = current_counts['count'].min()
 
 # Create labels in fastText format.
 df['label'] = '__label__' + df['category']
+df['output'] = df['label'] + '' +df['query']
+df[['output']].to_csv(output_file_name, header=False, sep='I', escapechar='\\', quoting=csv.QUOTE_NONE, index=False)
 
 # Output labeled query data as a space-separated file, making sure that every category is in the taxonomy.
 df = df[df['category'].isin(categories)]
